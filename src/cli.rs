@@ -21,11 +21,10 @@ pub struct Flags {
 }
 
 pub fn validate_args(flags: &Flags) {
-    if !matches!(
-        flags.band.as_ref().unwrap().to_ascii_lowercase().as_str(),
-        "r" | "g" | "b"
-    ) {
-        eprintln!("band should be r, g or b");
-        std::process::exit(1);
+    if let Some(band) = &flags.band {
+        if !matches!(band.as_str(), "r" | "g" | "b") {
+            eprintln!("band should be r, g or b");
+            std::process::exit(1);
+        }
     }
 }

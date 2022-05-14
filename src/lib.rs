@@ -1,53 +1,55 @@
-pub mod cli;
+use color_eyre::Result;
 use image::Rgb;
 use std::{
-    error::Error,
     io::{stdin, Read},
+    process::exit,
 };
 
-pub fn encode(flags: &cli::Flags) -> Result<(), Box<dyn Error>> {
+pub mod cli;
+
+pub fn encode(flags: &cli::Flags) -> Result<()> {
     let mut img = image::open(&flags.src)?.to_rgb8();
-    let mut buf = Vec::new();
-    stdin().read_to_end(&mut buf)?;
-    let msg = String::from_utf8(buf)?;
-    let max_size = {
-        let (w, h) = img.dimensions();
-        w * h
-    };
-    let fits = msg.len() * 8 < max_size as usize;
-    if !fits {
-       eprintln!("Message size is too large! You inputted {} characters when the image could only fit {}.", msg.len() * 8, max_size); 
-       std::process::exit(1);
+    let msg = read_msg()?;
+
+    let (w, h) = img.dimensions();
+    let max_size = w * h;
+
+    if msg.len() * 8 >= max_size as usize {
+        eprintln!("Message size is too large! You inputted {} characters when the image could only fit {}.", msg.len() * 8, max_size);
+        exit(1);
     }
 
-    let mut bit_string = String::new();
-    for byte in msg.chars() {
-        bit_string.push_str(&format!("{:0>8b}", byte as u8));
-    }
+    for (target_bit, (_, _, Rgb([r, g, b]))) in msg
+        .chars()
+        .map(|byte| format!("{:0>8b}", byte as u8))
+        .zip(img.enumerate_pixels_mut())
+    {
+        let target_bit = target_bit.chars().next().unwrap();
 
-    for bit in bit_string.chars().zip(img.enumerate_pixels_mut()) {
-        let (target_bit, (_x, _y, Rgb([r, g, b]))) = bit;
         let band = match flags.band.as_ref().unwrap().to_ascii_lowercase().as_str() {
             "r" => r,
             "g" => g,
             "b" => b,
             _ => unreachable!(),
         };
+
         let lsb = *band & 1;
         if lsb != (target_bit as u8 - 48) {
             *band ^= 1;
         }
     }
+
     img.save(&flags.target)?;
     Ok(())
 }
 
-pub fn decode(flags: &cli::Flags) -> Result<(), Box<dyn Error>> {
+pub fn decode(flags: &cli::Flags) -> Result<()> {
     let img = image::open(&flags.src)?.to_rgb8();
     let mut bit_string = String::new();
-    
-    for pxl in img.pixels() {
-        let Rgb([r, g, b]) = pxl;
+
+    for px in img.pixels() {
+        let Rgb([r, g, b]) = px;
+
         let band = match flags.band.as_ref().unwrap().to_ascii_lowercase().as_str() {
             "r" => r,
             "g" => g,
@@ -59,12 +61,24 @@ pub fn decode(flags: &cli::Flags) -> Result<(), Box<dyn Error>> {
         bit_string.push_str(&lsb)
     }
 
-
     for i in (0..bit_string.len()).step_by(8) {
-        let byte = &bit_string[i..i+8];
-        if byte == "00000000" { break; }
+        let byte = &bit_string[i..i + 8];
+
+        if byte == "0".repeat(8) {
+            break;
+        }
+
         let byte = u8::from_str_radix(byte, 2).expect("Not a binary number!");
         print!("{}", byte as char);
     }
+
     Ok(())
+}
+
+fn read_msg() -> Result<String> {
+    println!("<< enter message >>");
+
+    let mut buf = Vec::new();
+    stdin().read_to_end(&mut buf)?;
+    Ok(String::from_utf8(buf)?)
 }
