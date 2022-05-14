@@ -19,13 +19,12 @@ pub fn encode(flags: &cli::Flags) -> Result<()> {
         exit(1);
     }
 
-    for (target_bit, (_, _, Rgb([r, g, b]))) in msg
+    let bit_string: String = msg
         .chars()
         .map(|byte| format!("{:0>8b}", byte as u8))
-        .zip(img.enumerate_pixels_mut())
-    {
-        let target_bit = target_bit.chars().next().unwrap();
+        .collect();
 
+    for (target_bit, (_, _, Rgb([r, g, b]))) in bit_string.chars().zip(img.enumerate_pixels_mut()) {
         let band = match flags.band.as_ref().unwrap().to_ascii_lowercase().as_str() {
             "r" => r,
             "g" => g,
