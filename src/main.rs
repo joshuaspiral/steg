@@ -1,5 +1,6 @@
 use color_eyre::Result;
-use std::env;
+use colored::Colorize;
+use std::{env, process::exit};
 use steg::{cli::*, *};
 
 fn main() -> Result<()> {
@@ -12,16 +13,19 @@ fn main() -> Result<()> {
 
     match flags.nested {
         SubCommand::Encode(SubEncode { src, target, band }) => {
-            let band = band.unwrap_or_else(|| String::from("r"));
-            encode(&src, &target, &band)
+            encode(&src, &target, &validate_band(band))
         }
-        SubCommand::Decode(SubDecode { src, band }) => {
-            let band = band.unwrap_or_else(|| String::from("r"));
-            decode(&src, &band)
-        }
-        SubCommand::Wipe(SubWipe { target, band }) => {
-            let band = band.unwrap_or_else(|| String::from("r"));
-            wipe(&target, &band)
-        }
+        SubCommand::Decode(SubDecode { src, band }) => decode(&src, &validate_band(band)),
+        SubCommand::Wipe(SubWipe { target, band }) => wipe(&target, &validate_band(band)),
+    }
+}
+
+fn validate_band(band: Option<String>) -> String {
+    let band = band.unwrap_or_else(|| String::from("r"));
+    if matches!(band.as_str(), "r" | "g" | "b") {
+        band
+    } else {
+        eprintln!("{}", format!("Invalid band: {band}").red().bold());
+        exit(1);
     }
 }
