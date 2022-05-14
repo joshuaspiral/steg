@@ -6,8 +6,10 @@ Steganographic encoder/decoder with one bit per byte on one channel
 
 Building `steg` from source requires a functional [Rust](//rust-lang.org) toolchain. You can install Rust at with [rustup](//rustup.rs).
 
+To build from source:
+
 ```sh
-cargo run --release <filename>
+cargo build --release
 ```
 
 ## Options

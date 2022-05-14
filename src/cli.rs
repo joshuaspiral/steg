@@ -4,7 +4,7 @@ use argh::FromArgs;
 /// Steganographic encoder/decoder
 pub struct Flags {
     #[argh(subcommand)]
-    nested: SubCommand,
+    pub nested: SubCommand,
 }
 
 #[derive(FromArgs)]
@@ -25,7 +25,7 @@ pub struct SubEncode {
     /// target filename
     #[argh(positional)]
     pub target: String,
-    
+
     /// channel/band e.g. R for the RED channel
     #[argh(positional)]
     pub band: Option<String>,
@@ -42,12 +42,4 @@ pub struct SubDecode {
     /// channel/band e.g. R for the RED channel
     #[argh(positional)]
     pub band: Option<String>,
-}
-    
-
-pub fn validate_args(band: String) {
-    if !matches!(band.as_str(), "r" | "g" | "b") {
-        eprintln!("Band should be r, g or b.");
-        std::process::exit(1);
-    }
 }

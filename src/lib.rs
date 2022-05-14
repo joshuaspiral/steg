@@ -1,4 +1,5 @@
 use color_eyre::Result;
+use colored::Colorize;
 use image::Rgb;
 use std::{
     io::{stdin, Read},
@@ -7,16 +8,16 @@ use std::{
 
 pub mod cli;
 
-pub fn encode(src: String, target: String, band: String) -> Result<()> {
-    
+pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
     let mut img = image::open(src)?.to_rgb8();
     let msg = read_msg()?;
 
     let (w, h) = img.dimensions();
     let max_size = w * h;
+    let len = (msg.len() * 8) as u32;
 
-    if msg.len() * 8 >= max_size as usize {
-        eprintln!("Message size is too large! You inputted {} characters when the image could only fit {}.", msg.len() * 8, max_size);
+    if len >= max_size {
+        eprintln!("Message is too long!\n\t- message length: {len}\n\t- max size: {max_size}");
         exit(1);
     }
 
@@ -26,7 +27,7 @@ pub fn encode(src: String, target: String, band: String) -> Result<()> {
         .collect();
 
     for (target_bit, (_, _, Rgb([r, g, b]))) in bit_string.chars().zip(img.enumerate_pixels_mut()) {
-        let band = match band.to_ascii_lowercase().as_str() {
+        let band = match band {
             "r" => r,
             "g" => g,
             "b" => b,
@@ -43,14 +44,14 @@ pub fn encode(src: String, target: String, band: String) -> Result<()> {
     Ok(())
 }
 
-pub fn decode(src: String, target: String, band: String) -> Result<()> {
+pub fn decode(src: &str, band: &str) -> Result<()> {
     let img = image::open(src)?.to_rgb8();
     let mut bit_string = String::new();
 
     for px in img.pixels() {
         let Rgb([r, g, b]) = px;
 
-        let band = match band.to_ascii_lowercase().as_str() {
+        let band = match band {
             "r" => r,
             "g" => g,
             "b" => b,
@@ -61,16 +62,18 @@ pub fn decode(src: String, target: String, band: String) -> Result<()> {
         bit_string.push_str(&lsb)
     }
 
-    for i in (0..bit_string.len()).step_by(8) {
-        let byte = &bit_string[i..i + 8];
+    println!("<< begin decoded message >>");
 
-        if byte == "0".repeat(8) {
-            break;
-        }
+    (0..bit_string.len())
+        .step_by(8)
+        .map(|i| &bit_string[i..i + 8])
+        .take_while(|byte| *byte != "0".repeat(8))
+        .for_each(|byte| {
+            let byte = u8::from_str_radix(byte, 2).expect("Not a binary number!");
+            print!("{}", byte as char);
+        });
 
-        let byte = u8::from_str_radix(byte, 2).expect("Not a binary number!");
-        print!("{}", byte as char);
-    }
+    println!("<< EOF >>");
 
     Ok(())
 }
@@ -80,5 +83,9 @@ fn read_msg() -> Result<String> {
 
     let mut buf = Vec::new();
     stdin().read_to_end(&mut buf)?;
-    Ok(String::from_utf8(buf)?)
+    let s = String::from_utf8(buf)?;
+
+    println!("<< read message of size {} >>", s.len());
+
+    Ok(s)
 }
