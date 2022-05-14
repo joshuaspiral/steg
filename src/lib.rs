@@ -17,7 +17,13 @@ pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
     let len = (msg.len() * 8) as u32;
 
     if len >= max_size {
-        eprintln!("Message is too long!\n\t- message length: {len}\n\t- max size: {max_size}");
+        eprintln!(
+            "{}\n{}{3}\n{}{3}",
+            "Message is too long!".red().bold(),
+            format!("- message length: {len}").yellow(),
+            format!("- max size: {max_size}").yellow(),
+            "B".yellow()
+        );
         exit(1);
     }
 
@@ -62,7 +68,12 @@ pub fn decode(src: &str, band: &str) -> Result<()> {
         bit_string.push_str(&lsb)
     }
 
-    println!("<< begin decoded message >>");
+    println!(
+        "{} {} {}",
+        "<<".green(),
+        "begin decoded message".green().bold(),
+        ">>".green()
+    );
 
     (0..bit_string.len())
         .step_by(8)
@@ -73,19 +84,31 @@ pub fn decode(src: &str, band: &str) -> Result<()> {
             print!("{}", byte as char);
         });
 
-    println!("<< EOF >>");
+    println!("{} {} {}", "<<".red(), "EOF".red().bold(), ">>".red());
 
     Ok(())
 }
 
 fn read_msg() -> Result<String> {
-    println!("<< enter message >>");
+    println!(
+        "{} {} {}",
+        "<<".blue(),
+        "enter message".blue().bold(),
+        ">>".blue()
+    );
 
     let mut buf = Vec::new();
     stdin().read_to_end(&mut buf)?;
     let s = String::from_utf8(buf)?;
 
-    println!("<< read message of size {} >>", s.len());
+    println!(
+        "{} {} {}{} {}",
+        "<<".green(),
+        "read message of size".green().bold(),
+        s.len().to_string().yellow().bold(),
+        "B".yellow().bold(),
+        ">>".green()
+    );
 
     Ok(s)
 }
