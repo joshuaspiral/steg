@@ -12,6 +12,7 @@ pub struct Flags {
 pub enum SubCommand {
     Encode(SubEncode),
     Decode(SubDecode),
+    Wipe(SubWipe),
 }
 
 #[derive(FromArgs)]
@@ -38,6 +39,19 @@ pub struct SubDecode {
     /// source image filename
     #[argh(positional)]
     pub src: String,
+
+    /// channel/band e.g. R for the RED channel
+    #[argh(positional)]
+    pub band: Option<String>,
+}
+
+#[derive(FromArgs)]
+/// wipe subcommand
+#[argh(subcommand, name = "wipe")]
+pub struct SubWipe {
+    /// file to wipe
+    #[argh(positional)]
+    pub target: String,
 
     /// channel/band e.g. R for the RED channel
     #[argh(positional)]

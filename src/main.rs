@@ -19,5 +19,9 @@ fn main() -> Result<()> {
             let band = band.unwrap_or_else(|| String::from("r"));
             decode(&src, &band)
         }
+        SubCommand::Wipe(SubWipe { target, band }) => {
+            let band = band.unwrap_or_else(|| String::from("r"));
+            wipe(&target, &band)
+        }
     }
 }

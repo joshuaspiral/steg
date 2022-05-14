@@ -50,6 +50,21 @@ pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn wipe(target :&str, band: &str) -> Result<()> {
+    let mut img = image::open(target)?.to_rgb8();
+    for (_, _, Rgb([r, g, b])) in img.enumerate_pixels_mut() {
+        let band = match band {
+            "r" => r,
+            "g" => g,
+            "b" => b,
+            _ => unreachable!(),
+        };
+
+        *band |= 0;
+    }
+    Ok(())
+}
+
 pub fn decode(src: &str, band: &str) -> Result<()> {
     let img = image::open(src)?.to_rgb8();
     let mut bit_string = String::new();
