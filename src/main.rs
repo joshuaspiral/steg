@@ -9,11 +9,10 @@ fn main() -> Result<()> {
     color_eyre::install()?;
 
     let flags: Flags = argh::from_env();
-    validate_args(&flags);
+    validate_args(flags.band);
 
-    if flags.decode {
-        steg::decode(&flags)
-    } else {
-        steg::encode(&flags)
+    match flags.nested {
+        SubCommand::Encode(SubCommand::Encode {src, target, band}) => encode(src, target, band),
+        SubCommand::Decode(SubCommand::Decode {src, band}) => encode(src, band),
     }
 }

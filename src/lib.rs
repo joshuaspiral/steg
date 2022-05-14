@@ -7,8 +7,9 @@ use std::{
 
 pub mod cli;
 
-pub fn encode(flags: &cli::Flags) -> Result<()> {
-    let mut img = image::open(&flags.src)?.to_rgb8();
+pub fn encode(src: String, target: String, band: String) -> Result<()> {
+    
+    let mut img = image::open(src)?.to_rgb8();
     let msg = read_msg()?;
 
     let (w, h) = img.dimensions();
@@ -25,7 +26,7 @@ pub fn encode(flags: &cli::Flags) -> Result<()> {
         .collect();
 
     for (target_bit, (_, _, Rgb([r, g, b]))) in bit_string.chars().zip(img.enumerate_pixels_mut()) {
-        let band = match flags.band.as_ref().unwrap().to_ascii_lowercase().as_str() {
+        let band = match band.to_ascii_lowercase().as_str() {
             "r" => r,
             "g" => g,
             "b" => b,
@@ -38,18 +39,18 @@ pub fn encode(flags: &cli::Flags) -> Result<()> {
         }
     }
 
-    img.save(&flags.target)?;
+    img.save(target)?;
     Ok(())
 }
 
-pub fn decode(flags: &cli::Flags) -> Result<()> {
-    let img = image::open(&flags.src)?.to_rgb8();
+pub fn decode(src: String, target: String, band: String) -> Result<()> {
+    let img = image::open(src)?.to_rgb8();
     let mut bit_string = String::new();
 
     for px in img.pixels() {
         let Rgb([r, g, b]) = px;
 
-        let band = match flags.band.as_ref().unwrap().to_ascii_lowercase().as_str() {
+        let band = match band.to_ascii_lowercase().as_str() {
             "r" => r,
             "g" => g,
             "b" => b,
