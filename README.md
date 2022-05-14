@@ -12,21 +12,25 @@ To build from source:
 cargo build --release
 ```
 
+To install to path:
+```sh
+cargo install --path .
+```
+
 ## Options
 
 ```
-Usage: steg <src> <target> [<band>] [-d]
+Usage: steg <command> [<args>]
 
 Steganographic encoder/decoder
 
-Positional Arguments:
-  src               source image filename
-  target            target filename
-  band              channel/band e.g. R for the RED channel
-
 Options:
-  -d, --decode      to switch mode to decode
   --help            display usage information
+
+Commands:
+  encode            encode subcommand
+  decode            decode subcommand
+  wipe              wipe subcommand
 ```
 
 ### Licensing
