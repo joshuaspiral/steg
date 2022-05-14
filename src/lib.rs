@@ -51,7 +51,7 @@ pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn wipe(target :&str, band: &str) -> Result<()> {
+pub fn wipe(target: &str, band: &str) -> Result<()> {
     let mut img = image::open(target)?.to_rgb8();
     for (_, _, Rgb([r, g, b])) in img.enumerate_pixels_mut() {
         let band = match band {
@@ -61,7 +61,9 @@ pub fn wipe(target :&str, band: &str) -> Result<()> {
             _ => unreachable!(),
         };
 
-        *band |= 0;
+        if *band & 1 == 1 {
+            *band ^= 1;
+        }
     }
     img.save(target)?;
     Ok(())
