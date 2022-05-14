@@ -10,6 +10,15 @@ pub fn encode(flags: &cli::Flags) -> Result<(), Box<dyn Error>> {
     let mut buf = Vec::new();
     stdin().read_to_end(&mut buf)?;
     let msg = String::from_utf8(buf)?;
+    let max_size = {
+        let (w, h) = img.dimensions();
+        w * h
+    };
+    let fits = msg.len() * 8 < max_size as usize;
+    if !fits {
+       eprintln!("Message size is too large! You inputted {} characters when the image could only fit {}.", msg.len() * 8, max_size); 
+       std::process::exit(1);
+    }
 
     let mut bit_string = String::new();
     for byte in msg.chars() {
