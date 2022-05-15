@@ -11,8 +11,12 @@ fn main() -> Result<()> {
     let flags: Flags = argh::from_env();
 
     match flags.nested {
-        SubCommand::Encode(SubEncode { src, target }) => encode(&src, &target),
-        SubCommand::Decode(SubDecode { src }) => decode(&src),
-        SubCommand::Wipe(SubWipe { target }) => wipe(&target),
+        SubCommand::Encode(SubEncode { src, target }) => Image::new(&src)?.encode(&target),
+        SubCommand::Decode(SubDecode { src }) => Ok(Image::new(&src)?.decode()),
+        SubCommand::Wipe(SubWipe { target }) => {
+            let mut img = Image::new(&target)?;
+            img.wipe();
+            img.save(&target)
+        }
     }
 }
