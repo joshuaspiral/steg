@@ -3,12 +3,14 @@ use colored::Colorize;
 use image::Rgb;
 use std::{
     io::{stdin, Read},
+    path::Path,
     process::exit,
 };
 
 pub mod cli;
 
 pub fn encode(src: &str, target: &str) -> Result<()> {
+    wipe(src)?;
     let mut img = image::open(src)?.to_rgb8();
     let msg = read_msg()?;
 
@@ -16,7 +18,7 @@ pub fn encode(src: &str, target: &str) -> Result<()> {
     let max_size = w * h * 3;
     let len = (msg.len() * 8) as u32;
 
-    if len >= max_size {
+    if len > max_size {
         eprintln!(
             "{}\n{}{3}\n{}{3}",
             "Message is too long!".red().bold(),
@@ -32,7 +34,10 @@ pub fn encode(src: &str, target: &str) -> Result<()> {
         .map(|byte| format!("{:0>8b}", byte as u8))
         .collect();
 
-    wipe(target)?;
+    if Path::new(target).exists() {
+        wipe(target)?;
+    }
+
     for (target_bit, (x, y, Rgb([r, g, b]))) in bit_string.chars().zip(img.enumerate_pixels_mut()) {
         let band = match (y * w + x) / len {
             0 => r,
@@ -91,16 +96,24 @@ pub fn decode(src: &str) -> Result<()> {
         ">>".green()
     );
 
-    (0..bit_string.len())
+    let mut len = 0;
+    for byte in (0..bit_string.len())
         .step_by(8)
         .map(|i| &bit_string[i..i + 8])
         .take_while(|byte| *byte != "0".repeat(8))
-        .for_each(|byte| {
-            let byte = u8::from_str_radix(byte, 2).expect("Not a binary number!");
-            print!("{}", byte as char);
-        });
+    {
+        let byte = u8::from_str_radix(byte, 2).expect("Not a binary number!");
+        print!("{}", byte as char);
+        len += 1;
+    }
 
-    println!("{} {} {}", "<<".red(), "EOF".red().bold(), ">>".red());
+    println!(
+        "{} {} {} {}",
+        "<<".red(),
+        "EOF - message length".red().bold(),
+        format!("{len}B").yellow().bold(),
+        ">>".red()
+    );
 
     Ok(())
 }
