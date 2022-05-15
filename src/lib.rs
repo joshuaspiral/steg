@@ -8,20 +8,20 @@ use std::{
 
 pub mod cli;
 
-pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
+pub fn encode(src: &str, target: &str) -> Result<()> {
     let mut img = image::open(src)?.to_rgb8();
     let msg = read_msg()?;
 
     let (w, h) = img.dimensions();
-    let max_size = w * h;
+    let max_size = w * h * 3;
     let len = (msg.len() * 8) as u32;
 
     if len >= max_size {
         eprintln!(
             "{}\n{}{3}\n{}{3}",
             "Message is too long!".red().bold(),
-            format!("- message length: {len}").yellow(),
-            format!("- max size: {max_size}").yellow(),
+            format!("- message length: {}", len / 8).yellow(),
+            format!("- max size: {}", max_size / 8).yellow(),
             "B".yellow()
         );
         exit(1);
@@ -32,12 +32,12 @@ pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
         .map(|byte| format!("{:0>8b}", byte as u8))
         .collect();
 
-    wipe(target, band)?;
-    for (target_bit, (_, _, Rgb([r, g, b]))) in bit_string.chars().zip(img.enumerate_pixels_mut()) {
-        let band = match band {
-            "r" => r,
-            "g" => g,
-            "b" => b,
+    wipe(target)?;
+    for (target_bit, (x, y, Rgb([r, g, b]))) in bit_string.chars().zip(img.enumerate_pixels_mut()) {
+        let band = match (y * w + x) / len {
+            0 => r,
+            1 => g,
+            2 => b,
             _ => unreachable!(),
         };
 
@@ -51,41 +51,38 @@ pub fn encode(src: &str, target: &str, band: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn wipe(target: &str, band: &str) -> Result<()> {
+pub fn wipe(target: &str) -> Result<()> {
     let mut img = image::open(target)?.to_rgb8();
-    for (_, _, Rgb([r, g, b])) in img.enumerate_pixels_mut() {
-        let band = match band {
-            "r" => r,
-            "g" => g,
-            "b" => b,
-            _ => unreachable!(),
-        };
-
-        if *band & 1 == 1 {
-            *band ^= 1;
+    for Rgb(bands) in img.pixels_mut() {
+        for band in bands {
+            if *band & 1 == 1 {
+                *band ^= 1;
+            }
         }
     }
     img.save(target)?;
     Ok(())
 }
 
-pub fn decode(src: &str, band: &str) -> Result<()> {
+pub fn decode(src: &str) -> Result<()> {
     let img = image::open(src)?.to_rgb8();
-    let mut bit_string = String::new();
+
+    let mut red_bs = String::new();
+    let mut green_bs = String::new();
+    let mut blue_bs = String::new();
 
     for px in img.pixels() {
         let Rgb([r, g, b]) = px;
 
-        let band = match band {
-            "r" => r,
-            "g" => g,
-            "b" => b,
-            _ => unreachable!(),
-        };
-
-        let lsb = (band & 1).to_string();
-        bit_string.push_str(&lsb)
+        let r_lsb = (r & 1).to_string();
+        let g_lsb = (g & 1).to_string();
+        let b_lsb = (b & 1).to_string();
+        red_bs.push_str(&r_lsb);
+        green_bs.push_str(&g_lsb);
+        blue_bs.push_str(&b_lsb);
     }
+
+    let bit_string = format!("{red_bs}{green_bs}{blue_bs}");
 
     println!(
         "{} {} {}",
