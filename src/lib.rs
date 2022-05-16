@@ -44,7 +44,7 @@ impl Image {
 
         let msg = read_msg()?;
         let len = (msg.len() * 8) as u32;
-        let (w, _h) = self.dimensions;
+        let (w, h) = self.dimensions;
 
         if len > self.max_size {
             eprintln!(
@@ -68,19 +68,31 @@ impl Image {
             img.save(target)?;
         }
 
-        for (target_bit, (x, y, Rgb([r, g, b]))) in
-            bit_string.chars().zip(self.img.enumerate_pixels_mut())
-        {
-            let band = match (y * w + x) / len {
-                0 => r,
-                1 => g,
-                2 => b,
-                _ => unreachable!(),
-            };
+        for (idx, Rgb([r, g, b])) in self.img.pixels_mut().enumerate() {
+            let r_lsb = *r & 1;
+            let g_lsb = *g & 1;
+            let b_lsb = *b & 1;
+            if idx > bit_string.len() {
+                break;
+            }
 
-            let lsb = *band & 1;
-            if lsb != target_bit.to_digit(2).expect("Digit conversion failed") as u8 {
-                *band ^= 1;
+            for i in 0..3 {
+                let band_tb = bit_string.chars().nth(idx + (w * h * i) as usize).unwrap();
+                let band_lsb = match i {
+                    0 => r_lsb,
+                    1 => g_lsb,
+                    2 => b_lsb,
+                    _ => unreachable!(),
+                };
+                let band = match i {
+                    0 => &mut *r,
+                    1 => &mut *g,
+                    2 => &mut *b,
+                    _ => unreachable!(),
+                };
+                if band_lsb != band_tb.to_digit(2).expect("Digit conversion failed") as u8 {
+                    *band ^= 1;
+                }
             }
         }
 
@@ -96,6 +108,7 @@ impl Image {
             let Rgb([r, g, b]) = px;
 
             let r_lsb = (r & 1).to_string();
+            dbg!(&r_lsb);
             let g_lsb = (g & 1).to_string();
             let b_lsb = (b & 1).to_string();
             red_bs.push_str(&r_lsb);
